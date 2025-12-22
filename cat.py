@@ -13,8 +13,8 @@ st.divider()
 
 # 图片数组（沿用原有链接，可按需替换）
 images = [
-    'https://www.allaboutbirds.org/guide/assets/og/75712701-1200px.jpg',
-    'https://www.allaboutbirds.org/news/wp-content/uploads/2025/11/redpolls-alejandra-macneil-pennsylvania-307998561-1.77-social-1280x720.jpg',
+     'https://www.allaboutbirds.org/news/wp-content/uploads/2025/11/redpolls-alejandra-macneil-pennsylvania-307998561-1.77-social-1280x720.jpg',
+    'https://image.petmd.com/files/styles/863x625/public/CANS_dogsmiling_379727605.jpg',
     'https://images2.alphacoders.com/716/71660.jpg'
 ]
 # 图片对应备注（贴合动物园主题，更生动）
@@ -73,3 +73,4 @@ st.markdown(
     "<p style='text-align: center; color: #696969;'>✨ 欢迎浏览动物园可爱瞬间 ✨</p>",
     unsafe_allow_html=True
 )
+
