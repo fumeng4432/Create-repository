@@ -1,284 +1,307 @@
 import streamlit as st
+import plotly.graph_objects as go
+import plotly.express as px
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import requests
+from streamlit.components.v1 import html
 
+# 页面配置
 st.set_page_config(
-    page_title="学生数字档案 - 浮梦",
-    page_icon="📚",
+    page_title="餐厅评分系统",
+    page_icon="🍽️",
     layout="wide"
 )
-
-# 添加 st.title（真正的Streamlit标题组件）
-st.title("学生数字档案系统")  # ✅ 添加 st.title
-
-# 初始化session state中的数据
-if 'student_name' not in st.session_state:
-    st.session_state.student_name = "浮梦"
-if 'student_id' not in st.session_state:
-    st.session_state.student_id = "第一批笨蛋学生"
-if 'show_edit_form' not in st.session_state:
-    st.session_state.show_edit_form = False
 
 # 自定义CSS样式
 st.markdown("""
 <style>
-/* 卡片栏样式 */
-.title-card {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    color: white;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.2);
-    border-left: 5px solid #4dabf7;
-    position: relative;
-}
-.title-card h1 {
-    color: white;
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-    text-align: center;
-}
-.title-divider {
-    border-top: 2px solid rgba(255, 255, 255, 0.3);
-    margin: 0.5rem 0;
-}
-/* 按钮样式 */
-.edit-button {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 0.4rem 1.2rem;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.edit-button:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-}
-/* 表单样式 */
-.edit-form {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 10px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    margin-top: 1rem;
-    border: 1px solid #e0e0e0;
-}
-.edit-form h3 {
-    color: #1e3c72;
-    margin-bottom: 1rem;
-}
-.form-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 1rem;
-}
-.submit-btn {
-    background: #1e3c72;
-    color: white;
-    border: none;
-    padding: 0.5rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-}
-.cancel-btn {
-    background: #f0f0f0;
-    color: #666;
-    border: none;
-    padding: 0.5rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-}
-/* 徽章样式 */
-.id-badge {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 0.9em;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-/* 指标卡片样式 */
-.metric-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 1rem;
-    border-radius: 8px;
-    color: white;
-    text-align: center;
-    margin: 0.5rem 0;
-}
+    .main-header {
+        font-size: 36px;
+        font-weight: bold;
+        color: #FF6B6B;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .section-header {
+        font-size: 24px;
+        font-weight: bold;
+        color: #4ECDC4;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #4ECDC4;
+        padding-bottom: 5px;
+    }
+    .restaurant-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .price-tag {
+        background-color: #FFD166;
+        color: #333;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+        margin: 5px;
+    }
+    .stat-box {
+        background-color: #F8F9FA;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 0;
+        border-left: 5px solid #4ECDC4;
+    }
+    .recommendation-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 20px;
+        border-radius: 15px;
+        color: white;
+        margin: 15px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 处理编辑表单提交
-def handle_form_submit():
-    if 'new_name' in st.session_state and 'new_id' in st.session_state:
-        st.session_state.student_name = st.session_state.new_name
-        st.session_state.student_id = st.session_state.new_id
-    st.session_state.show_edit_form = False
-    st.rerun()
+# 应用标题
+st.markdown('<div class="main-header">🍽️ 餐厅评分系统</div>', unsafe_allow_html=True)
 
-def toggle_edit_form():
-    st.session_state.show_edit_form = not st.session_state.show_edit_form
-    st.rerun()
+# 创建两列布局
+col1, col2, col3 = st.columns([2, 1, 1])
 
-def cancel_edit():
-    st.session_state.show_edit_form = False
-    st.rerun()
+with col1:
+    st.markdown('<div class="section-header">📊 不同类型餐厅价格分布</div>', unsafe_allow_html=True)
+    
+    # 创建餐厅价格数据
+    restaurant_types = ['中式快餐', '西式餐厅', '日料', '火锅', '烧烤', '咖啡简餐']
+    avg_prices = [35, 85, 120, 95, 80, 45]
+    rating_scores = [4.2, 4.5, 4.8, 4.6, 4.3, 4.4]
+    
+    # 创建交互式图表
+    fig = go.Figure()
+    
+    # 添加柱状图
+    fig.add_trace(go.Bar(
+        x=restaurant_types,
+        y=avg_prices,
+        name='平均价格',
+        marker_color=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'],
+        text=[f'¥{price}' for price in avg_prices],
+        textposition='auto',
+    ))
+    
+    # 添加评分折线图（次y轴）
+    fig.add_trace(go.Scatter(
+        x=restaurant_types,
+        y=rating_scores,
+        name='评分',
+        yaxis='y2',
+        line=dict(color='#333333', width=3),
+        mode='lines+markers',
+        marker=dict(size=10, symbol='star')
+    ))
+    
+    fig.update_layout(
+        title='不同类型餐厅价格与评分对比',
+        xaxis_title='餐厅类型',
+        yaxis_title='平均价格 (元)',
+        yaxis2=dict(
+            title='评分',
+            overlaying='y',
+            side='right',
+            range=[3.5, 5.0]
+        ),
+        height=400,
+        showlegend=True,
+        plot_bgcolor='rgba(240, 242, 246, 0.8)'
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # 用餐高峰时段
+    st.markdown('<div class="section-header">⏰ 用餐高峰时段</div>', unsafe_allow_html=True)
+    
+    # 生成高峰时段数据
+    hours = list(range(24))
+    traffic = [5, 2, 1, 1, 1, 8, 15, 20, 25, 20, 15, 30, 40, 35, 30, 25, 40, 65, 80, 75, 60, 40, 20, 10]
+    
+    peak_df = pd.DataFrame({
+        '小时': hours,
+        '客流量': traffic
+    })
+    
+    # 创建热力图
+    fig2 = px.density_heatmap(
+        peak_df,
+        x='小时',
+        y=['客流量'],
+        nbinsx=24,
+        title='24小时客流量分布',
+        color_continuous_scale='Reds'
+    )
+    
+    fig2.update_layout(height=200)
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # 列出高峰时段
+    st.markdown("**高峰时段：**")
+    peak_hours = [(i, traffic[i]) for i in range(len(traffic)) if traffic[i] > 50]
+    for hour, flow in peak_hours:
+        st.markdown(f"- **{hour:02d}:00** - {flow}% 客流量")
 
-# 卡片栏HTML
-st.markdown(f"""
-<div class="title-card">
-    <h1>学生{st.session_state.student_name}的数字档案</h1>
-    <div class="title-divider"></div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span class="id-badge">
-                📚 数字档案系统
-            </span>
-            <span class="id-badge">
-                🆔 {st.session_state.student_id}
-            </span>
+with col2:
+    st.markdown('<div class="section-header">🏪 餐厅详情</div>', unsafe_allow_html=True)
+    
+    # 餐厅详情卡片
+    st.markdown("""
+    <div class="restaurant-card">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: white;">🍜 美食汇餐厅</h3>
+            <p style="margin: 5px 0; opacity: 0.9;">⭐ 评分: 4.8/5.0</p>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="font-size: 0.9em; opacity: 0.9; margin-right: 10px;">
-                最后更新：2025-12-18
+        
+        <div style="background: rgba(255, 255, 255, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+            <p style="margin: 5px 0;"><strong>🕐 营业时间:</strong> 00:00 - 24:00</p>
+            <p style="margin: 5px 0;"><strong>👥 好友数:</strong> 0</p>
+            <p style="margin: 5px 0;"><strong>💰 今日营业额:</strong> 4,775.0 元</p>
+        </div>
+        
+        <div style="margin-top: 15px;">
+            <p style="margin-bottom: 5px;"><strong>人均消费:</strong></p>
+            <div style="display: flex; align-items: center;">
+                <span class="price-tag">35元</span>
+                <div style="flex-grow: 1; margin-left: 15px;">
+                    <div style="background: rgba(255, 255, 255, 0.3); height: 10px; border-radius: 5px;">
+                        <div style="background: #FFD166; width: 70%; height: 100%; border-radius: 5px;"></div>
+                    </div>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; text-align: center;">当前消费程度</p>
+                </div>
             </div>
         </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
-
-# 编辑按钮
-col1, col2, col3 = st.columns([2, 1, 2])
-with col2:
-    if st.button("✏️ 编辑档案信息", key="edit_button", 
-                 help="点击编辑学生姓名和学号", 
-                 use_container_width=True):
-        st.session_state.show_edit_form = True
-
-# 编辑表单（条件显示）
-if st.session_state.show_edit_form:
-    st.markdown('<div class="edit-form">', unsafe_allow_html=True)
-    st.markdown('<h3>📝 编辑学生档案</h3>', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
-    # 表单字段
-    col1, col2 = st.columns(2)
-    with col1:
-        new_name = st.text_input("学生姓名", value=st.session_state.student_name, 
-                                key="new_name", placeholder="请输入学生姓名")
-    with col2:
-        new_id = st.text_input("学号", value=st.session_state.student_id, 
-                              key="new_id", placeholder="请输入学号")
+    # 位置信息
+    st.markdown('<div class="section-header">📍 位置信息</div>', unsafe_allow_html=True)
     
-    # 表单按钮
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown('<div class="form-buttons">', unsafe_allow_html=True)
-        col_left, col_mid, col_right = st.columns([1, 0.2, 1])
-        with col_left:
-            if st.button("✅ 确认更新", key="submit_form", use_container_width=True):
-                handle_form_submit()
-        with col_right:
-            if st.button("❌ 取消", key="cancel_form", use_container_width=True):
-                cancel_edit()
-        st.markdown('</div>', unsafe_allow_html=True)
+    # 创建地图HTML
+    map_html = """
+    <iframe 
+        width="100%" 
+        height="300" 
+        frameborder="0" 
+        scrolling="no" 
+        marginheight="0" 
+        marginwidth="0" 
+        src="https://map.qq.com/m/place/search/%E9%A4%90%E5%8E%85/center=116.397428,39.90923/zoom=15">
+    </iframe>
+    """
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    html(map_html, height=300)
+    
+    st.markdown("""
+    <div style="background-color: #E8F4FD; padding: 10px; border-radius: 5px; margin-top: 10px;">
+        <p style="margin: 0; font-size: 14px; color: #1890FF;">
+            💡 <strong>提示：</strong>点击上方地图可查看餐厅位置，或使用
+            <a href="https://lbs.qq.com/tool/getpoint/get-point.html" target="_blank">
+                腾讯坐标拾取器
+            </a>
+            获取精确坐标
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.divider()
-
-# ✅ 添加 st.text 组件示例
-st.text("📋 以下是学生的详细档案信息：")  # ✅ 添加 st.text
-
-# ✅ 添加 st.metric 组件示例
-st.subheader("📈 学习指标")
-metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
-with metric_col1:
-    st.metric("综合评分", "85.6", "+2.3")  # ✅ 添加 st.metric
-with metric_col2:
-    st.metric("出勤率", "92%", "+5%")      # ✅ 添加 st.metric
-with metric_col3:
-    st.metric("任务完成", "78%", "-3%")     # ✅ 添加 st.metric
-with metric_col4:
-    st.metric("活跃度", "94%", "+8%")       # ✅ 添加 st.metric
-
-st.divider()
-
-# 基本信息显示
-st.subheader("👤 个人信息")
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.write(f"👤 姓名：{st.session_state.student_name}")
-    st.write(f"📇 学号：{st.session_state.student_id}")
-    st.write(f"📅 注册时间：2023-09-01 11:31:11")
-with col2:
-    st.subheader("状态信息")
-    st.write(f"🧠 精神状态：正常")
-    st.write(f"❤️ 健康度：良好（安全值：高）")
 with col3:
-    st.subheader("系统状态")
-    st.write(f"🟢 在线状态：在线")
-    st.write(f"⚡ 连接状态：已加速")
-with col4:
-    st.subheader("日志时间")
-    st.write(f"📝 最后更新：2025-12-18 18:00:00")
+    st.markdown('<div class="section-header">🍽️ 今日午餐推荐</div>', unsafe_allow_html=True)
+    
+    # 推荐菜品
+    recommendations = [
+        {"name": "宫保鸡丁套餐", "price": 38, "rating": 4.7, "calories": 450, "type": "中式"},
+        {"name": "日式照烧鸡排饭", "price": 42, "rating": 4.8, "calories": 520, "type": "日式"},
+        {"name": "番茄牛肉意面", "price": 45, "rating": 4.6, "calories": 480, "type": "西式"},
+        {"name": "健康蔬菜沙拉", "price": 32, "rating": 4.5, "calories": 320, "type": "轻食"}
+    ]
+    
+    for i, rec in enumerate(recommendations):
+        st.markdown(f"""
+        <div class="recommendation-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0;">{rec['name']}</h4>
+                <span style="background: white; color: #f5576c; padding: 3px 10px; border-radius: 15px; font-weight: bold;">
+                    ¥{rec['price']}
+                </span>
+            </div>
+            <div style="margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>⭐ {rec['rating']}/5.0</span>
+                    <span>🔥 {rec['calories']} 卡路里</span>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.3); height: 8px; border-radius: 4px; margin-bottom: 5px;">
+                    <div style="background: white; width: {rec['rating']*20}%; height: 100%; border-radius: 4px;"></div>
+                </div>
+                <p style="margin: 0; font-size: 14px;">🏷️ 类型: {rec['type']}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # 统计数据
+    st.markdown('<div class="section-header">📈 今日统计</div>', unsafe_allow_html=True)
+    
+    stats_col1, stats_col2 = st.columns(2)
+    
+    with stats_col1:
+        st.markdown("""
+        <div class="stat-box">
+            <h3 style="margin: 0; color: #4ECDC4;">1</h3>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">今日推荐早餐数量</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with stats_col2:
+        st.markdown("""
+        <div class="stat-box">
+            <h3 style="margin: 0; color: #FF6B6B;">1</h3>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">其他推荐数量</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # 评分分布
+    st.markdown("### 📊 评分分布")
+    ratings = [4.2, 4.5, 4.8, 4.6, 4.3, 4.4]
+    avg_rating = np.mean(ratings)
+    
+    fig3 = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=avg_rating,
+        title={'text': "平均评分"},
+        domain={'x': [0, 1], 'y': [0, 1]},
+        gauge={
+            'axis': {'range': [None, 5], 'tickwidth': 1},
+            'bar': {'color': "#4ECDC4"},
+            'steps': [
+                {'range': [0, 3], 'color': "lightgray"},
+                {'range': [3, 4], 'color': "gray"},
+                {'range': [4, 5], 'color': "darkgray"}
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': avg_rating
+            }
+        }
+    ))
+    
+    fig3.update_layout(height=250)
+    st.plotly_chart(fig3, use_container_width=True)
 
-st.divider()
-
-st.subheader("📊 技能矩阵")
-skill_data = {
-    "C++": 60,
-    "Python": 70,
-    "Java": 80
-}
-
-for skill, score in skill_data.items():
-    status = "（技能水平上升）" if score >= 85 else "（技能水平下降）" if score < 70 else ""
-    st.write(f"**{skill}：** {score}% {status}")
-    st.progress(score / 100)
-
-st.write(f"**Streamlit课程进度：** 75%")
-st.progress(0.75)
-
-st.divider()
-
-st.subheader("📋 任务日志")
-task_data = [
-    ["日期", "任务", "状态", "难度"],
-    ["2023-10-01", "学生数字档案", "已完成", "★★☆☆☆"],
-    ["2023-10-12", "成绩管理系统", "进行中", "★★★☆☆"],
-    ["2023-12-12", "数据周期展示", "未完成", "★★★★☆"]
-]
-st.table(task_data)
-
-st.divider()
-
-st.subheader("💻 最新代码成果")
-code_content = '''import matplotlib.pyplot as plt
-
-def detect_vulnerability(input_data):
-    """漏洞检测函数"""
-    if input_data == "admin":
-        return "ACCESS_GRANTED"
-    else:
-        return "SHOULD_BE_BLOCKED"
-x = [1, 2, 3, 4, 5]
-y = [10, 20, 15, 25, 30]
-plt.plot(x, y)
-plt.title("数据趋势图")
-plt.show()
-'''
-st.code(code_content, language="python")
-
-st.divider()
-
-# ✅ 再添加一个 st.text 示例
-st.text("系统提示：所有数据均为模拟数据，仅用于演示目的。")  # ✅ 添加 st.text
-
-st.success("📌 系统提示：下一个任务目标已解锁")
+# 底部信息
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666; font-size: 14px;">
+    <p>🍽️ 餐厅评分系统 | 数据更新于: {}</p>
+    <p>💡 提示：所有数据均为模拟数据，仅用于展示 purposes</p>
+</div>
+""".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")), unsafe_allow_html=True)
