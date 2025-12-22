@@ -1,5 +1,4 @@
 import streamlit as st
-import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 import numpy as np
@@ -305,3 +304,4 @@ st.markdown("""
     <p>💡 提示：所有数据均为模拟数据，仅用于展示 purposes</p>
 </div>
 """.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")), unsafe_allow_html=True)
+
