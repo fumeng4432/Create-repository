@@ -12,60 +12,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 自定义CSS样式
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #e63946;
-        text-align: center;
-        margin-bottom: 1rem;
-        font-weight: bold;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        color: #457b9d;
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
-        border-bottom: 2px solid #a8dadc;
-        padding-bottom: 0.5rem;
-    }
-    .card {
-        background-color: #f1faee;
-        border-radius: 10px;
-        padding: 15px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 15px;
-    }
-    .metric-card {
-        background-color: #a8dadc;
-        border-radius: 10px;
-        padding: 15px;
-        text-align: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .restaurant-card {
-        background-color: #ffffff;
-        border-radius: 8px;
-        padding: 15px;
-        margin: 10px 0;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        border-left: 5px solid #e63946;
-    }
-    .restaurant-name {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #1d3557;
-    }
-    .restaurant-info {
-        color: #457b9d;
-        font-size: 0.9rem;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 # 标题
-st.markdown('<h1 class="main-header">🍜 南宁美食数据仪表盘</h1>', unsafe_allow_html=True)
+st.title("🍜 南宁美食数据仪表盘")
 
 # 创建模拟数据
 def create_restaurant_data():
@@ -262,8 +210,7 @@ map_df = create_map_data()
 
 # 侧边栏
 with st.sidebar:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 🎛️ 数据筛选")
+    st.header("🎛️ 数据筛选")
     
     # 美食类别筛选
     categories = ['全部'] + list(restaurant_df['category'].unique())
@@ -291,19 +238,16 @@ with st.sidebar:
         step=5
     )
     
-    st.markdown("</div>", unsafe_allow_html=True)
-    
     # 显示统计信息
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+    st.divider()
     st.metric("餐厅总数", len(restaurant_df))
     avg_rating = restaurant_df['rating'].mean()
     st.metric("平均评分", f"{avg_rating:.1f}")
     st.metric("数据更新时间", datetime.now().strftime("%Y-%m-%d"))
-    st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("---")
-    st.markdown("### 📊 图表说明")
+    st.divider()
     st.info("""
+    **图表说明**
     1. **价格走势图**: 显示5家餐厅12个月的价格变化
     2. **类别分布图**: 显示不同美食类别的店铺数量
     3. **访客量面积图**: 显示各类美食每月访客量变化
@@ -311,24 +255,19 @@ with st.sidebar:
     """)
 
 # 主页面布局
+st.subheader("📊 关键指标")
 col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     st.metric("最高评分", f"{restaurant_df['rating'].max():.1f}")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     avg_price = restaurant_df['avg_price'].mean()
     st.metric("平均价格", f"¥{avg_price:.0f}")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with col3:
-    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
     total_reviews = restaurant_df['review_count'].sum()
     st.metric("总评论数", f"{total_reviews:,}")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # 应用筛选
 filtered_df = restaurant_df.copy()
@@ -346,8 +285,8 @@ filtered_df = filtered_df[
 ]
 
 # 价格走势折线图
-st.markdown('<h2 class="sub-header">📈 餐厅价格走势（12个月）</h2>', unsafe_allow_html=True)
-st.markdown('<div class="card">', unsafe_allow_html=True)
+st.divider()
+st.subheader("📈 餐厅价格走势（12个月）")
 
 # 选择要显示的餐厅
 available_restaurants = price_df['餐厅'].unique()
@@ -368,7 +307,7 @@ if selected_restaurants:
     price_pivot = price_pivot.sort_index()
     
     # 使用Streamlit的line_chart
-    st.line_chart(price_pivot, use_container_width=True)
+    st.line_chart(price_pivot)
     
     # 显示数据表格
     with st.expander("查看价格数据表格"):
@@ -376,106 +315,81 @@ if selected_restaurants:
 else:
     st.warning("请至少选择一家餐厅以显示价格走势图")
 
-st.markdown("</div>", unsafe_allow_html=True)
-
 # 柱状图和面积图并排显示
+st.divider()
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown('<h2 class="sub-header">📊 美食类别分布</h2>', unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("📊 美食类别分布")
     
     # 使用Streamlit的bar_chart
     # 设置索引为美食类别
     bar_chart_data = category_df.set_index('美食类别')['店铺数量']
-    st.bar_chart(bar_chart_data, use_container_width=True)
+    st.bar_chart(bar_chart_data)
     
     # 显示详细数据
     with st.expander("查看类别详细数据"):
         st.dataframe(category_df)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<h2 class="sub-header">📈 各类美食访客量趋势</h2>', unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("📈 各类美食访客量趋势")
     
     # 使用Streamlit的area_chart
     # 设置索引为月份
     area_chart_data = visitor_df.set_index('月份')[['米粉类', '广西菜类', '烧烤类', '小吃类']]
-    st.area_chart(area_chart_data, use_container_width=True)
+    st.area_chart(area_chart_data)
     
     # 显示详细数据
     with st.expander("查看访客量详细数据"):
         st.dataframe(visitor_df)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # 地图展示
-st.markdown('<h2 class="sub-header">🗺️ 南宁美食地图</h2>', unsafe_allow_html=True)
-st.markdown('<div class="card">', unsafe_allow_html=True)
+st.divider()
+st.subheader("🗺️ 南宁美食地图")
 
 # 使用Streamlit的map功能
-st.map(map_df, size='size', color='#FF0000', use_container_width=True)
+st.map(map_df)
 
 # 显示地图上的餐厅信息
-st.markdown("**地图上的餐厅:**")
+st.write("**地图上的餐厅:**")
 cols = st.columns(4)
 for i, (idx, row) in enumerate(map_df.iterrows()):
     with cols[i % 4]:
-        st.markdown(f"""
-        <div style="border-left: 3px solid #e63946; padding-left: 10px; margin-bottom: 10px;">
-            <div style="font-weight: bold; color: #1d3557;">{row['name']}</div>
-            <div style="color: #457b9d; font-size: 0.9rem;">
-                类别: {row['category']}<br>
-                评分: {row['rating']}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
+        st.write(f"**{row['name']}**")
+        st.write(f"类别: {row['category']}")
+        st.write(f"评分: {row['rating']}")
 
 # 行政区分布图
-st.markdown('<h2 class="sub-header">🏙️ 南宁各行政区美食分布</h2>', unsafe_allow_html=True)
-st.markdown('<div class="card">', unsafe_allow_html=True)
+st.divider()
+st.subheader("🏙️ 南宁各行政区美食分布")
 
 # 使用Streamlit的bar_chart
 district_chart_data = district_df.set_index('行政区')['店铺数量']
-st.bar_chart(district_chart_data, use_container_width=True)
+st.bar_chart(district_chart_data)
 
 # 显示详细数据
 with st.expander("查看行政区详细数据"):
     st.dataframe(district_df)
 
-st.markdown("</div>", unsafe_allow_html=True)
-
 # 餐厅详细信息
-st.markdown('<h2 class="sub-header">📋 餐厅详细信息</h2>', unsafe_allow_html=True)
+st.divider()
+st.subheader("📋 餐厅详细信息")
 
 # 显示筛选后的餐厅
 if len(filtered_df) > 0:
-    # 使用Streamlit的columns布局
-    cols = st.columns(2)
     for idx, row in filtered_df.iterrows():
-        with cols[idx % 2]:
-            st.markdown(f"""
-            <div class="restaurant-card">
-                <div class="restaurant-name">{row['name']} ⭐ {row['rating']}</div>
-                <div class="restaurant-info">
-                    类别: {row['category']} | 人均: ¥{row['avg_price']}<br>
-                    评论数: {row['review_count']} | 行政区: {row['district']}<br>
-                    招牌菜: {row['popular_dish']}<br>
-                    地址: {row['address']}<br>
-                    开业年份: {row['open_year']}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        with st.container():
+            st.write(f"##### {row['name']} ⭐ {row['rating']}")
+            st.write(f"**类别:** {row['category']} | **人均:** ¥{row['avg_price']} | **评论数:** {row['review_count']}")
+            st.write(f"**招牌菜:** {row['popular_dish']} | **开业年份:** {row['open_year']}")
+            st.write(f"**地址:** {row['address']} ({row['district']})")
+            st.divider()
 else:
     st.warning("没有找到符合条件的餐厅，请调整筛选条件")
 
 # 数据表格
-st.markdown('<h2 class="sub-header">📊 完整数据表格</h2>', unsafe_allow_html=True)
-st.markdown('<div class="card">', unsafe_allow_html=True)
+st.divider()
+st.subheader("📊 完整数据表格")
 
 # 格式化显示
 display_df = filtered_df.copy()
@@ -500,14 +414,6 @@ st.dataframe(
     hide_index=True
 )
 
-st.markdown("</div>", unsafe_allow_html=True)
-
 # 页脚
-st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: #666;'>"
-    "南宁美食数据仪表盘 © 2023 | 数据仅供参考 | 最后更新: " + 
-    datetime.now().strftime("%Y-%m-%d %H:%M") +
-    "</div>", 
-    unsafe_allow_html=True
-)
+st.divider()
+st.caption(f"南宁美食数据仪表盘 © 2023 | 数据仅供参考 | 最后更新: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
