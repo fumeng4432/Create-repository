@@ -1,14 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
 import random
 from datetime import datetime
-
-# 设置中文字体支持
-matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS', 'DejaVu Sans']
-matplotlib.rcParams['axes.unicode_minus'] = False
 
 # 设置页面配置
 st.set_page_config(
@@ -245,12 +239,26 @@ def create_district_data():
         '店铺数量': counts
     })
 
+def create_map_data():
+    """创建地图数据"""
+    # 模拟南宁的地理位置数据
+    map_data = pd.DataFrame({
+        'lat': [22.8167, 22.8190, 22.8370, 22.7550, 22.7800, 22.8100, 22.8230, 22.8150],
+        'lon': [108.3667, 108.3200, 108.2900, 108.3700, 108.3100, 108.3400, 108.3180, 108.3250],
+        'name': ['老友记粉店', '螺蛳粉大王', '桂小厨', '邕城食府', '复记老友', '舒记粉店', '瑶王府', '中山路夜市烧烤'],
+        'category': ['米粉', '米粉', '广西菜', '广西菜', '米粉', '米粉', '广西菜', '烧烤'],
+        'rating': [4.7, 4.5, 4.8, 4.6, 4.4, 4.7, 4.5, 4.3],
+        'size': [47, 45, 48, 46, 44, 47, 45, 43]
+    })
+    return map_data
+
 # 加载数据
 restaurant_df = create_restaurant_data()
 price_df = create_monthly_price_data()
 category_df = create_category_data()
 visitor_df = create_visitor_data()
 district_df = create_district_data()
+map_df = create_map_data()
 
 # 侧边栏
 with st.sidebar:
@@ -299,7 +307,7 @@ with st.sidebar:
     1. **价格走势图**: 显示5家餐厅12个月的价格变化
     2. **类别分布图**: 显示不同美食类别的店铺数量
     3. **访客量面积图**: 显示各类美食每月访客量变化
-    4. **行政区分布图**: 显示餐厅在南宁各区的分布
+    4. **美食地图**: 显示餐厅在南宁的分布位置
     """)
 
 # 主页面布局
@@ -353,29 +361,18 @@ selected_restaurants = st.multiselect(
 if selected_restaurants:
     filtered_price_df = price_df[price_df['餐厅'].isin(selected_restaurants)]
     
-    # 使用matplotlib创建折线图
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # 转换为宽格式，便于Streamlit绘制折线图
+    price_pivot = filtered_price_df.pivot(index='月份序号', columns='餐厅', values='价格指数')
     
-    colors = ['#e63946', '#457b9d', '#2a9d8f', '#e9c46a', '#f4a261']
+    # 按月份排序
+    price_pivot = price_pivot.sort_index()
     
-    for i, restaurant in enumerate(selected_restaurants):
-        restaurant_data = filtered_price_df[filtered_price_df['餐厅'] == restaurant]
-        restaurant_data = restaurant_data.sort_values('月份序号')
-        
-        color_idx = i % len(colors)
-        ax.plot(restaurant_data['月份'], restaurant_data['价格指数'], 
-                marker='o', linewidth=2.5, label=restaurant, color=colors[color_idx])
+    # 使用Streamlit的line_chart
+    st.line_chart(price_pivot, use_container_width=True)
     
-    ax.set_title('南宁热门餐厅12个月价格走势', fontsize=16, fontweight='bold', pad=20)
-    ax.set_xlabel('月份', fontsize=12)
-    ax.set_ylabel('价格指数', fontsize=12)
-    ax.legend(title='餐厅名称', loc='upper left', bbox_to_anchor=(1, 1))
-    ax.grid(True, alpha=0.3)
-    ax.set_xticks(range(len(filtered_price_df['月份'].unique())))
-    ax.set_xticklabels(filtered_price_df['月份'].unique(), rotation=45)
-    
-    plt.tight_layout()
-    st.pyplot(fig)
+    # 显示数据表格
+    with st.expander("查看价格数据表格"):
+        st.dataframe(price_pivot)
 else:
     st.warning("请至少选择一家餐厅以显示价格走势图")
 
@@ -388,26 +385,14 @@ with col1:
     st.markdown('<h2 class="sub-header">📊 美食类别分布</h2>', unsafe_allow_html=True)
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    # 创建柱状图
-    fig, ax = plt.subplots(figsize=(8, 6))
+    # 使用Streamlit的bar_chart
+    # 设置索引为美食类别
+    bar_chart_data = category_df.set_index('美食类别')['店铺数量']
+    st.bar_chart(bar_chart_data, use_container_width=True)
     
-    bars = ax.bar(category_df['美食类别'], category_df['店铺数量'], 
-                  color=['#e63946', '#457b9d', '#2a9d8f', '#e9c46a', '#f4a261'])
-    
-    ax.set_title('南宁美食类别分布', fontsize=14, fontweight='bold')
-    ax.set_xlabel('美食类别', fontsize=12)
-    ax.set_ylabel('店铺数量', fontsize=12)
-    
-    # 在每个柱子上添加数值
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
-                f'{int(height)}', ha='center', va='bottom', fontsize=10)
-    
-    ax.grid(True, alpha=0.3, axis='y')
-    plt.xticks(rotation=15)
-    plt.tight_layout()
-    st.pyplot(fig)
+    # 显示详细数据
+    with st.expander("查看类别详细数据"):
+        st.dataframe(category_df)
     
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -415,59 +400,52 @@ with col2:
     st.markdown('<h2 class="sub-header">📈 各类美食访客量趋势</h2>', unsafe_allow_html=True)
     st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    # 创建面积图
-    fig, ax = plt.subplots(figsize=(8, 6))
+    # 使用Streamlit的area_chart
+    # 设置索引为月份
+    area_chart_data = visitor_df.set_index('月份')[['米粉类', '广西菜类', '烧烤类', '小吃类']]
+    st.area_chart(area_chart_data, use_container_width=True)
     
-    months = visitor_df['月份']
-    categories = ['米粉类', '广西菜类', '烧烤类', '小吃类']
-    colors = ['#e63946', '#457b9d', '#2a9d8f', '#e9c46a']
-    
-    # 创建堆叠面积图
-    bottom_values = np.zeros(len(months))
-    
-    for i, category in enumerate(categories):
-        values = visitor_df[category].values
-        ax.fill_between(range(len(months)), bottom_values, bottom_values + values, 
-                        alpha=0.7, label=category, color=colors[i])
-        bottom_values += values
-    
-    ax.set_title('各类美食每月访客量变化', fontsize=14, fontweight='bold')
-    ax.set_xlabel('月份', fontsize=12)
-    ax.set_ylabel('访客量', fontsize=12)
-    ax.legend(title='美食类别', loc='upper left', bbox_to_anchor=(1, 1))
-    ax.set_xticks(range(len(months)))
-    ax.set_xticklabels(months, rotation=45)
-    ax.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    st.pyplot(fig)
+    # 显示详细数据
+    with st.expander("查看访客量详细数据"):
+        st.dataframe(visitor_df)
     
     st.markdown("</div>", unsafe_allow_html=True)
 
-# 行政区分布图
-st.markdown('<h2 class="sub-header">🗺️ 南宁各行政区美食分布</h2>', unsafe_allow_html=True)
+# 地图展示
+st.markdown('<h2 class="sub-header">🗺️ 南宁美食地图</h2>', unsafe_allow_html=True)
 st.markdown('<div class="card">', unsafe_allow_html=True)
 
-# 创建柱状图展示行政区分布
-fig, ax = plt.subplots(figsize=(10, 6))
+# 使用Streamlit的map功能
+st.map(map_df, size='size', color='#FF0000', use_container_width=True)
 
-bars = ax.bar(district_df['行政区'], district_df['店铺数量'], 
-              color=['#e63946', '#457b9d', '#2a9d8f', '#e9c46a', '#f4a261', '#264653'])
+# 显示地图上的餐厅信息
+st.markdown("**地图上的餐厅:**")
+cols = st.columns(4)
+for i, (idx, row) in enumerate(map_df.iterrows()):
+    with cols[i % 4]:
+        st.markdown(f"""
+        <div style="border-left: 3px solid #e63946; padding-left: 10px; margin-bottom: 10px;">
+            <div style="font-weight: bold; color: #1d3557;">{row['name']}</div>
+            <div style="color: #457b9d; font-size: 0.9rem;">
+                类别: {row['category']}<br>
+                评分: {row['rating']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-ax.set_title('南宁各行政区美食店铺数量', fontsize=16, fontweight='bold', pad=20)
-ax.set_xlabel('行政区', fontsize=12)
-ax.set_ylabel('店铺数量', fontsize=12)
+st.markdown("</div>", unsafe_allow_html=True)
 
-# 在每个柱子上添加数值
-for bar in bars:
-    height = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
-            f'{int(height)}', ha='center', va='bottom', fontsize=10)
+# 行政区分布图
+st.markdown('<h2 class="sub-header">🏙️ 南宁各行政区美食分布</h2>', unsafe_allow_html=True)
+st.markdown('<div class="card">', unsafe_allow_html=True)
 
-ax.grid(True, alpha=0.3, axis='y')
-plt.xticks(rotation=15)
-plt.tight_layout()
-st.pyplot(fig)
+# 使用Streamlit的bar_chart
+district_chart_data = district_df.set_index('行政区')['店铺数量']
+st.bar_chart(district_chart_data, use_container_width=True)
+
+# 显示详细数据
+with st.expander("查看行政区详细数据"):
+    st.dataframe(district_df)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -476,17 +454,22 @@ st.markdown('<h2 class="sub-header">📋 餐厅详细信息</h2>', unsafe_allow_
 
 # 显示筛选后的餐厅
 if len(filtered_df) > 0:
+    # 使用Streamlit的columns布局
+    cols = st.columns(2)
     for idx, row in filtered_df.iterrows():
-        st.markdown(f"""
-        <div class="restaurant-card">
-            <div class="restaurant-name">{row['name']} ⭐ {row['rating']}</div>
-            <div class="restaurant-info">
-                类别: {row['category']} | 人均: ¥{row['avg_price']} | 评论数: {row['review_count']}<br>
-                招牌菜: {row['popular_dish']} | 开业年份: {row['open_year']}<br>
-                地址: {row['address']} ({row['district']})
+        with cols[idx % 2]:
+            st.markdown(f"""
+            <div class="restaurant-card">
+                <div class="restaurant-name">{row['name']} ⭐ {row['rating']}</div>
+                <div class="restaurant-info">
+                    类别: {row['category']} | 人均: ¥{row['avg_price']}<br>
+                    评论数: {row['review_count']} | 行政区: {row['district']}<br>
+                    招牌菜: {row['popular_dish']}<br>
+                    地址: {row['address']}<br>
+                    开业年份: {row['open_year']}
+                </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 else:
     st.warning("没有找到符合条件的餐厅，请调整筛选条件")
 
