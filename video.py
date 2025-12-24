@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="视频中心")
+st.set_page_config(page_title="喜羊羊与灰太狼")
 
 # 修复视频数组定义
 video_arr = [
@@ -58,3 +58,4 @@ for i in range(len(video_arr)):
             key=f'btn_{i}',  # 添加key避免重复
             use_container_width=True  # 让按钮填满列的宽度
         )
+
