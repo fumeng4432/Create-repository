@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(page_title="喜羊羊与灰太狼")
 
-# 修复视频数组定义
+# 视频数组定义
 video_arr = [
     {
         'url': 'https://l00.xyz/G9hp6',
@@ -51,11 +51,16 @@ cols = st.columns(num_cols)
 for i in range(len(video_arr)):
     col_index = i % num_cols
     with cols[col_index]:
+        # 判断是否为当前选中的按钮
+        is_selected = (i == st.session_state['ind'])
+        
+        # 在选中的按钮文本前添加标记
+        button_text = f"▶ 第{i+1}集" if is_selected else f"第{i+1}集"
+        
         st.button(
-            f'第{i+1}集',
+            button_text,
             on_click=playVideo,
-            args=(i,),  # 注意这里是元组，不是列表
-            key=f'btn_{i}',  # 添加key避免重复
-            use_container_width=True  # 让按钮填满列的宽度
+            args=(i,),
+            key=f'btn_{i}',
+            use_container_width=True
         )
-
