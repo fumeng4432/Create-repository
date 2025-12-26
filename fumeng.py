@@ -4,6 +4,8 @@ import pandas as pd
 import streamlit as st
 # 导入plotly.express库，用于创建交互式图表
 import plotly.express as px
+# 导入plotly.graph_objects用于创建更多图表类型
+import plotly.graph_objects as go
 
 
 def get_dataframe_from_excel():
@@ -114,6 +116,98 @@ def product_line_chart(df):
     return fig
 
 
+def rating_distribution_chart(df):
+    """生成评分分布折线图"""
+    # 按评分分组并计算每个评分的订单数量
+    rating_counts = df.groupby(by=["评分"]).size().reset_index(name="订单数量")
+    rating_counts = rating_counts.sort_values("评分")
+    
+    # 创建折线图
+    fig = px.line(
+        rating_counts,
+        x="评分",
+        y="订单数量",
+        title="<b>顾客评分分布折线图</b>",
+        markers=True,  # 在数据点上添加标记
+        line_shape="linear"  # 线性连接
+    )
+    
+    # 添加数据点标签
+    fig.update_traces(
+        mode="lines+markers",  # 同时显示线和标记
+        marker=dict(size=8),   # 标记大小
+        line=dict(width=3)     # 线宽
+    )
+    
+    # 更新图表布局样式
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis_title="评分",
+        yaxis_title="订单数量",
+        xaxis=dict(
+            tickmode='linear',  # 线性刻度
+            tick0=0,            # 从0开始
+            dtick=1             # 步长为1
+        )
+    )
+    
+    # 添加阴影区域（可选）
+    fig.add_trace(
+        go.Scatter(
+            x=rating_counts["评分"],
+            y=rating_counts["订单数量"],
+            fill='tozeroy',
+            fillcolor='rgba(135, 206, 250, 0.3)',
+            line=dict(color='rgba(255,255,255,0)'),
+            showlegend=False,
+            name=''
+        )
+    )
+    
+    return fig
+
+
+def city_sales_comparison_chart(df):
+    """生成城市销售额对比折线图"""
+    # 按城市和小时数分组计算销售额
+    city_hour_sales = df.groupby(by=["城市", "小时数"])["总价"].sum().reset_index()
+    
+    # 创建折线图，按城市分组
+    fig = px.line(
+        city_hour_sales,
+        x="小时数",
+        y="总价",
+        color="城市",
+        title="<b>各城市销售额对比折线图（按小时）</b>",
+        markers=True,
+        line_shape="spline"  # 平滑曲线
+    )
+    
+    # 更新图表布局样式
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis_title="小时数",
+        yaxis_title="销售额",
+        legend_title="城市"
+    )
+    
+    return fig
+
+
+def create_star_rating(rating):
+    """创建星星评分显示"""
+    full_stars = int(rating)
+    half_star = 1 if rating - full_stars >= 0.5 else 0
+    empty_stars = 5 - full_stars - half_star
+    
+    stars = "★" * full_stars
+    if half_star:
+        stars += "½"
+    stars += "☆" * empty_stars
+    
+    return stars
+
+
 def main():
     # 设置Streamlit页面配置
     # page_title：浏览器标签页标题
@@ -133,6 +227,9 @@ def main():
     average_rating = df_selection["评分"].mean()
     # 每单平均销售额：总销售额除以订单数量
     average_sale_per_order = df_selection["总价"].mean()
+    
+    # 创建星星评分显示
+    star_rating = create_star_rating(average_rating)
 
     # 页面主标题
     st.title("📊 销售仪表板")
@@ -149,18 +246,21 @@ def main():
         st.subheader(f"RMB ¥ {total_sales:,.2f}")
     # 在第二列中显示平均评分
     with col2:
-        st.subheader("顾客评分的平均值:")
-        # 格式化显示平均评分：保留一位小数，加上星星符号
-        st.subheader(f"{average_rating:.1f} ⭐")
+        st.subheader("顾客平均评分:")
+        # 使用星星显示评分
+        st.subheader(f"{average_rating:.1f}")
+        st.subheader(f"{star_rating}")
     # 在第三列中显示每单平均销售额
     with col3:
-        st.subheader("每单的平均销售额:")
+        st.subheader("每单平均销售额:")
         # 格式化显示每单平均销售额：千位分隔符，保留两位小数
         st.subheader(f"RMB ¥ {average_sale_per_order:,.2f}")
 
-    # 生成两个图表
+    # 生成四个图表
     hourly_fig = hourly_sales_chart(df_selection)
     product_fig = product_line_chart(df_selection)
+    rating_fig = rating_distribution_chart(df_selection)
+    city_fig = city_sales_comparison_chart(df_selection)
 
     # 创建两列布局展示图表
     col_chart1, col_chart2 = st.columns(2)
@@ -171,6 +271,17 @@ def main():
     # 在第二列中显示产品类型销售额图表
     with col_chart2:
         st.plotly_chart(product_fig, use_container_width=True)
+    
+    # 添加分隔线
+    st.divider()
+    st.subheader("📈 评分与城市对比分析")
+    
+    # 创建另外两列布局展示新增的折线图
+    col_chart3, col_chart4 = st.columns(2)
+    with col_chart3:
+        st.plotly_chart(rating_fig, use_container_width=True)
+    with col_chart4:
+        st.plotly_chart(city_fig, use_container_width=True)
 
     # 添加分隔线
     st.divider()
@@ -180,6 +291,9 @@ def main():
 
     # 显示数据基本信息：记录条数和字段数量
     st.write(f"**数据概览**: 共 {len(df_selection)} 条记录, {len(df_selection.columns)} 个字段")
+    
+    # 添加一些统计信息
+    st.write(f"**评分统计**: 最高 {df_selection['评分'].max():.1f} 分, 最低 {df_selection['评分'].min():.1f} 分, 标准差 {df_selection['评分'].std():.2f}")
 
     # 显示数据表格
     st.dataframe(
