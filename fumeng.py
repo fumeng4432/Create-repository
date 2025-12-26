@@ -1,75 +1,143 @@
-import streamlit as st
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+import streamlit as st
+import plotly.express as px
 
-# 页面设置
-st.set_page_config(page_title="销售仪表板", layout="wide")
 
-# 生成模拟数据
-def create_sample_data():
-    # 时间数据
-    hours = list(range(8, 22))
-    sales_per_hour = [1200, 1500, 1800, 2100, 2400, 2800, 3200, 3500, 3800, 3400, 3000, 2700, 2400, 2000]
-    
-    # 产品类型数据
-    products = ['电子产品', '服装', '食品饮料', '家居用品', '化妆品', '图书']
-    product_sales = [45000, 38000, 52000, 31000, 28000, 25000]
-    
-    return hours, sales_per_hour, products, product_sales
+def get_dataframe_from_excel():
+    """从Excel读取销售数据并处理小时数列"""
+    df = pd.read_excel(
+        'supermarket_sales.xlsx',
+        sheet_name='销售数据',
+        skiprows=1,
+        index_col='订单号'
+    )
+    # 从时间列提取小时数
+    df["小时数"] = pd.to_datetime(df["时间"], format="%H:%M:%S").dt.hour
+    return df
 
-# 主应用
-st.title("销售仪表板")
 
-# 侧边栏筛选器
-with st.sidebar:
-    st.header("数据筛选")
-    option = st.selectbox("选择区域", ["全部", "华北", "华东", "华南", "西南"])
-    date_range = st.date_input("选择日期范围", [datetime.today() - timedelta(days=30), datetime.today()])
-    st.button("应用筛选", type="primary")
+def add_sidebar_func(df):
+    """创建侧边栏筛选器并返回筛选后的数据"""
+    with st.sidebar:
+        st.header("请筛选数据:")
+        # 城市筛选
+        city = st.multiselect(
+            "请选择城市:",
+            options=df["城市"].unique(),
+            default=df["城市"].unique()
+        )
+        # 顾客类型筛选
+        customer_type = st.multiselect(
+            "请选择顾客类型: ",
+            options=df["顾客类型"].unique(),
+            default=df["顾客类型"].unique()
+        )
+        # 性别筛选
+        gender = st.multiselect(
+            "请选择性别",
+            options=df["性别"].unique(),
+            default=df["性别"].unique()
+        )
+        # 应用筛选条件
+        df_selection = df.query(
+            "城市 == @city & 顾客类型 == @customer_type & 性别 == @gender"
+        )
+        return df_selection
 
-# 三个指标卡片
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("总销售额", "¥307,587", "+12.5%")
-with col2:
-    st.metric("顾客评分", "7.0", "+0.3")
-with col3:
-    st.metric("平均客单价", "¥307.59", "+5.2%")
 
-# 两个图表
-hours, sales_per_hour, products, product_sales = create_sample_data()
+def hourly_sales_chart(df):
+    """生成按小时数划分的销售额柱状图"""
+    sales_by_hour = df.groupby(by=["小时数"])["总价"].sum().reset_index()
+    fig = px.bar(
+        sales_by_hour,
+        x="小时数",
+        y="总价",
+        title="<b>按小时数划分的销售额</b>"
+    )
+    # 调整图表样式（透明背景）
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis_title="小时数",
+        yaxis_title="总价"
+    )
+    return fig
 
-col4, col5 = st.columns(2)
 
-with col4:
-    st.subheader("按小时销售统计")
-    chart_data1 = pd.DataFrame({
-        '小时': [f"{h}:00" for h in hours],
-        '销售额': sales_per_hour
-    })
-    st.bar_chart(chart_data1.set_index('小时'))
+def product_line_chart(df):
+    """生成按产品类型划分的销售额横向条形图"""
+    sales_by_product = df.groupby(by=["产品类型"])["总价"].sum().sort_values().reset_index()
+    fig = px.bar(
+        sales_by_product,
+        x="总价",
+        y="产品类型",
+        orientation="h",
+        title="<b>按产品类型划分的销售额</b>"
+    )
+    # 调整图表样式（透明背景）
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis_title="总价",
+        yaxis_title="产品类型"
+    )
+    return fig
 
-with col5:
-    st.subheader("按产品类型销售统计")
-    chart_data2 = pd.DataFrame({
-        '产品类型': products,
-        '销售额': product_sales
-    })
-    st.bar_chart(chart_data2.set_index('产品类型'))
 
-# 显示数据表格
-st.subheader("销售数据详情")
-data = {
-    '订单号': [f'ORD2024{1000+i}' for i in range(10)],
-    '城市': ['北京', '上海', '广州', '深圳', '杭州', '成都', '南京', '武汉', '西安', '重庆'],
-    '产品类型': np.random.choice(['电子产品', '服装', '食品饮料', '家居用品'], 10),
-    '销售额': np.random.randint(200, 2000, 10),
-    '评分': np.round(np.random.uniform(6.0, 9.0, 10), 1)
-}
-df = pd.DataFrame(data)
-st.dataframe(df, use_container_width=True)
+def main():
+    # 页面配置（宽布局+图标）
+    st.set_page_config(page_title="销售表", page_icon="📊", layout="wide")
 
-# 底部信息
-st.markdown("---")
-st.caption("销售数据仪表板 | 更新时间: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    # 读取数据并筛选
+    sale_df = get_dataframe_from_excel()
+    df_selection = add_sidebar_func(sale_df)
+
+    # 计算核心指标
+    total_sales = df_selection["总价"].sum()
+    average_rating = df_selection["评分"].mean()
+    average_sale_per_order = df_selection["总价"].mean()
+
+    # 页面标题与分隔线
+    st.title("📊 销售仪表板")
+    st.divider()
+
+    # 展示核心指标（三列布局）
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.subheader("总销售额:")
+        st.subheader(f"RMB ¥ {total_sales:,.2f}")
+    with col2:
+        st.subheader("顾客评分的平均值:")
+        st.subheader(f"{average_rating:.1f} ⭐")
+    with col3:
+        st.subheader("每单的平均销售额:")
+        st.subheader(f"RMB ¥ {average_sale_per_order:,.2f}")
+
+    # 生成并展示图表（两列布局）
+    hourly_fig = hourly_sales_chart(df_selection)
+    product_fig = product_line_chart(df_selection)
+
+    col_chart1, col_chart2 = st.columns(2)
+    with col_chart1:
+        st.plotly_chart(hourly_fig, use_container_width=True)
+    with col_chart2:
+        st.plotly_chart(product_fig, use_container_width=True)
+
+    # 添加分隔线
+    st.divider()
+
+    # 展示筛选后的数据表
+    st.subheader("📋 筛选后的销售数据")
+
+    # 显示数据基本信息
+    st.write(f"**数据概览**: 共 {len(df_selection)} 条记录, {len(df_selection.columns)} 个字段")
+
+    # 显示数据表
+    st.dataframe(
+        df_selection,
+        use_container_width=True,
+        height=400,  # 设置表格高度
+        hide_index=False  # 显示索引（订单号）
+    )
+
+
+if __name__ == "__main__":
+    main()
