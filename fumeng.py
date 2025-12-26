@@ -96,7 +96,7 @@ def main():
     average_sale_per_order = df_selection["总价"].mean()
 
     # 页面标题与分隔线
-    st.title("📊 销售仪表板")
+    st.title("📊 销量表")
     st.divider()
 
     # 展示核心指标（三列布局）
@@ -141,3 +141,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
