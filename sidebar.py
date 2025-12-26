@@ -11,7 +11,7 @@ st.set_page_config(
 with st.sidebar:
     st.markdown("### 🧭 导航栏")
     st.markdown("#### 当前页：首页")
-    st.link_button("数字档案", "https://tanshiji1.streamlit.app/")
+    st.link_button("数字档案", "https://tanshiji82.streamlit.app/")
     st.link_button("南宁美食数据仪表", "https://tanshiji3.streamlit.app/")
     st.link_button("相册", "https://tanshiji4.streamlit.app/")
     st.link_button("音乐播放器", "https://tanshiji5.streamlit.app/")
@@ -76,4 +76,5 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
+
 )
