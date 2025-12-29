@@ -113,4 +113,3 @@ elif page == "预测分类页面":
         else:
             st.success(f"预测结果: {predict_result_species}")
             st.image(f'{predict_result_species}.png', width=300)
-
