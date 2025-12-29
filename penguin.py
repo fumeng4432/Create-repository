@@ -11,7 +11,7 @@ st.set_page_config(
 
 #使用侧边栏实现多页面显示效果
 with st.sidebar:
-    st.image('img/rigth_logo.png', width=100)
+    st.image('rigth_logo.png', width=100)
     st.title('🐧 企鹅分类器')
     st.divider()
     page = st.selectbox("请选择页面", ["简介页面", "预测分类页面"])
@@ -29,7 +29,7 @@ if page == "简介页面":
 鹅和帽带企鹅的各种信息。""")
 
     st.header('🐧 三种企鹅的卡通图像')
-    st.image('img/penguins.png', width=600)  # 修改为width参数
+    st.image('penguins.png', width=600)  # 修改为width参数
 
 elif page == "预测分类页面":
     st.title("🔍 预测企鹅分类")
@@ -109,7 +109,7 @@ elif page == "预测分类页面":
         st.subheader("📊 结果展示")
         if not submitted:
             st.info("等待输入数据...")
-            st.image('img/rigth_logo.png', width=300)
+            st.image('rigth_logo.png', width=300)
         else:
             st.success(f"预测结果: {predict_result_species}")
-            st.image(f'img/{predict_result_species}.png', width=300)
+            st.image(f'{predict_result_species}.png', width=300)
