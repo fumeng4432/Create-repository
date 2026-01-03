@@ -151,8 +151,8 @@ elif nav_option == "数据分析":
 
         # 创建双层柱状图显示性别比例
         fig1 = go.Figure(data=[
-            go.Bar(name='男', x=gender_counts.index, y=gender_counts.get('男', [0]*len(gender_counts)), marker_color='#1f77b4'),
-            go.Bar(name='女', x=gender_counts.index, y=gender_counts.get('女', [0]*len(gender_counts)), marker_color='#ff7f0e')
+            go.Bar(name='男', x=gender_counts.index, y=gender_counts.get('男', [0]*len(gender_counts)), marker_color='#E6F4FC'),
+            go.Bar(name='女', x=gender_counts.index, y=gender_counts.get('女', [0]*len(gender_counts)), marker_color='#F1E3E1')
         ])
 
         # 更新图表布局
